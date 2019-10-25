@@ -1,0 +1,456 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.niekam.nieko">
+<head>
+
+    <title>Auto klubas</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/black-tie/jquery-ui.css">
+	
+<style>
+					
+		/* formos stilius */
+					
+	label, input { display:block; }
+	input.text { margin-bottom:12px; width:95%; padding: .4em; }
+	fieldset { padding:0; border:0; margin-top:25px; }
+	h1 { font-size: 1.2em; margin: .6em 0; }
+	div#users-contain { width: 350px; margin: 20px 0; }
+	div#users-contain table { margin: 1em 0; border-collapse: collapse; width: 100%; }
+	div#users-contain table td, div#users-contain table th { border: 1px solid #eee; padding: .6em 10px; text-align: left; }
+	.ui-dialog .ui-state-error { padding: .3em; }
+	.validateTips { border: 1px solid transparent; padding: 0.3em; }
+			
+	.anuliuotas {
+		color: red;
+	}
+	
+	.redaguoti {
+		color: green;
+	}
+	
+	label {
+	
+		display: inline-block;
+	
+	}
+	
+	.forma {
+	
+		display:block;
+	
+	}
+	
+</style>
+
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" 
+	integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" 
+	crossorigin="anonymous">
+</script>
+
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	
+<script>
+
+$(document).ready ( function() {
+
+	var pasirinkta;
+	
+	pasiimtiGamintojus();
+	pasiimtiMetus();
+
+	function pasiimtiGamintojus() {
+									
+		$.ajax({
+			url: "http://localhost:8080/restfull/all_duomenys" 
+		})
+			
+		.done(	function( data ) {	
+			
+			for ( i = 0; i < data.visigamintojai.length; i++) {
+	
+				$( 'select#dropdown' ).append(  '<option value="' + data.visigamintojai [ i ].marke +'">' + data.visigamintojai [ i ].marke + '</option>');
+				
+			}
+			
+		});
+	}
+	
+	$( "#dropdown" ).selectmenu({
+		
+		select: function( event, data ) {
+		
+			id_marke = $( '#dropdown' ).val();
+			
+			document.getElementById('metu').setAttribute('hidden', true);
+			
+			pasiimtiModelius(id_marke);
+		
+			$( "#dropdown" ).selectmenu("refresh");
+		
+		}
+	});
+	
+	function pasiimtiModelius(id_marke) {
+	
+		document.getElementById('auto_tipas').removeAttribute('hidden');
+		
+		$( "#tipas" ).selectmenu({
+			change: function( event, data ) {
+        
+				if ( ( typeof tipa ) != "undefined") {
+			
+					$('select#dropdown-modelis').html('');
+						
+				}
+		
+				tipa = data.item.value;
+				id_marke = id_marke.toLowerCase();
+			
+				param = 
+					"id=" + id_marke
+					+ '&t_id=' + tipa
+			
+				$.ajax({
+					url: "http://localhost:8080/restfull/all_marke?" + param 
+				})
+			
+				.done(	function( data ) {	
+					
+					for (i=0; i < data.length; i++) {
+
+						$( 'select#dropdown-modelis' ).append(  '<option value="' + data[i].modelis +'">' + data[i].modelis + '</option>');
+			
+					}
+				
+					$( 'select#dropdown-modelis' ).selectmenu("refresh");			
+					document.getElementById('model').removeAttribute('hidden');
+				
+				});
+			}
+		});
+	}
+	
+	$( "#dropdown-modelis" ).selectmenu({
+		
+		select: function( event, data ) {
+				
+			pasirinkta = data.item.value;
+			
+			param = 
+					"id=" + id_marke
+					+ '&t_id=' + tipa
+					+ '&m_id=' + pasirinkta
+			
+			$.ajax({
+				url: "http://localhost:8080/restfull/all_savybe?" + param 
+			})
+			
+			.done(	function( data ) {
+				
+				res_str = '';
+				aprasymas = '';
+				
+				for (i=0; i < data.length; i++) {
+						
+					if (typeof data[i].savybe != "undefined") {
+						
+						aprasymas = '</br>';
+						
+					}
+						
+					if (typeof data[i].galia != "undefined") {
+						
+						aprasymas = ' KW galios </br>';
+						
+					}
+						
+					if (typeof data[i].vietos != "undefined") {
+						
+						aprasymas = ' vietu </br>';
+						
+					}
+						
+					if (typeof data[i].paskirtis != "undefined") {
+						
+						aprasymas = ' paskirties </br>';
+						
+					}
+						
+					res_str += Object.values(data[i])[3] + "...metu " + Object.values(data[i])[4] + aprasymas;
+					
+				}
+				
+	console.log(Object.values(data[0])[5]);			
+				
+				res_str += '<img src="' + Object.values(data[0])[5] + '">';
+	console.log(res_str);									
+				$( '#savybiu-sarasas' ).html ( res_str );
+					
+				$( function() {
+					$( "#dialog-savybes" ).dialog();
+				});
+				
+			});
+			
+		}
+	});
+	
+	function pasiimtiMetus() {
+									
+		$.ajax({
+			url: "http://localhost:8080/restfull/vienas_parametras?parametras=metai" 
+														
+		})
+			
+		.done(	function( data ) {	
+			
+			for ( i = 0; i < data.length; i++) {
+	
+				$( 'select#dropdown-metai' ).append(  '<option value="' + data[ i ].metai +'">' + data[ i ].metai + '</option>');
+				
+			}
+			
+		});
+	}
+	
+	$( "#dropdown-metai" ).selectmenu({
+		
+		select: function( event, data ) {
+							
+			id_metai = $( '#dropdown-metai' ).val();
+			
+			document.getElementById('markes').setAttribute('hidden', true);
+			
+			$.ajax({
+				url: "http://localhost:8080/restfull/pagal_metus?parametras=" + id_metai 
+			})
+			
+			.done(	function( data ) {
+		
+				res_str = '';
+				
+				for (i=0; i < data.length; i++) {
+				
+					res_str += "Gamintojas: " + data[i].marke + " Modelis: " + data[i].modelis + '</br>';
+				
+				}
+			
+				$( '#modeliu-sarasas' ).html ( res_str );
+			
+				$( function() {
+					$( "#dialog-modeliai" ).dialog();
+				});
+			
+			});
+		}
+	
+	});
+			
+	$( '#tipasn' ).change( function() {
+		
+		pasirinkta = $( '#tipasn' ).val();
+		
+		switch (pasirinkta) {
+		
+			case "krovininiai":
+			
+				rodom = 'Galia';
+			
+			break;
+		
+			case "lengvieji":
+			
+				rodom = 'Savybe';
+			
+			break;
+		
+			case "mikroautobusai":
+			
+				rodom = 'Sedimu vietu skaicius';
+			
+			break;
+			
+			case "specialus":
+			
+				rodom = 'Paskirtis';
+			
+			break;
+		}
+		
+	$('#savybe').show();
+	$( '#parinkta_savybe' ).html( rodom );
+		
+	});
+	
+	$( "#itraukti" ).on( "click", function() { 
+	
+		prideti_auto.dialog("open");
+	
+	});	
+	
+	prideti_auto = $( "#dialog-form" ).dialog({
+		autoOpen: false,
+		height: 500,
+		width: 380,
+		modal: true,
+		buttons: {
+        "Įtraukti": add_kategorija,
+        Uždaryti: function() {
+         prideti_auto.dialog( "close" );
+        }
+		},
+	});
+	
+	function add_kategorija() {
+	
+		skaicius = 0;
+		
+		switch (pasirinkta) {
+		
+			case "krovininiai":
+			
+				skaicius = $('#savybe').val();
+			
+			break
+
+			case "mikroautobusai":
+			
+				skaicius = $('#savybe').val();
+				
+			break
+		}
+	
+	foto = $('#nuotrauka').val();
+	
+	foto = foto.substring(12);
+	
+		var formData = new FormData();
+		var fileSelect = document.getElementById("nuotrauka");
+		var file = fileSelect.files[0]
+		
+		formData.set("file", file , file.name);
+		
+		var request = new XMLHttpRequest();
+		request.open('POST', "http://localhost:8080/upload");
+		request.send(formData);
+		
+		parametrai = {
+		
+			tipas: pasirinkta
+			, gamintojas: $('#gamintojas').val()
+			, modelis: $('#modelis_i').val()
+			, metai: $('#metai').val()
+			, savybe: $('#savybe').val()
+			, galia: skaicius
+		}
+					
+		parametrai_str = 
+	
+			"marke=" + parametrai.gamintojas
+			+ "&modelis="  + parametrai.modelis 
+			+ '&metai=' + parametrai.metai
+			+ '&savybe=' + parametrai.savybe
+			+ '&galia=' + parametrai.galia
+			+ '&tipas=' + parametrai.tipas
+			+ '&nuotrauka=' + foto
+			
+								
+		$.ajax({
+				url: "http://localhost:8080/restfull/prideti?" + parametrai_str
+			})
+		.done( function( data ) {
+				
+			pasiimtiGamintojus();
+			pasiimtiMetus();
+			location.reload(); 
+			
+		});
+		
+		prideti_auto.dialog( "close" );
+	
+	}
+	
+});  
+</script>
+</head>
+
+<body>
+
+<fieldset id="markes">
+<label id="marke" for="dropdown"></label>
+	<select name="marke_drop" id="dropdown">
+		<option value="nepasirinkta" selected>Pasirinkite gamintoją:</option>
+	</select>
+</fieldset>	
+
+<fieldset hidden id="auto_tipas" >
+	<label for="tipas" ></label>
+	<select name="tipas" id="tipas">
+		<option value="nepasirinkta" selected>Pasirinkite tipą:</option>
+		<option value="lengvieji">Lengvasis</option>
+		<option value="krovininiai">Krovininis</option>
+		<option value="specialus">Specialusis</option>
+		<option value="mikroautobusai">Mikroautobusas</option>
+	</select>
+</fieldset>
+
+<fieldset hidden id="model">
+<label id="modelis" for="dropdown-modelis"></label>
+	<select name="modelis_drop" id="dropdown-modelis">
+		<option value="nepasirinkta" selected>Pasirinkite modelį:</option>
+	</select>
+</fieldset>
+
+
+<fieldset id="metu">
+<label id="pagal_metus" for="dropdown-metai"></label>
+	<select name="metai_drop" id="dropdown-metai" >
+		<option value="nepasirinkta" selected>Pasirinkite metus:</option>
+	</select>
+</fieldset>
+
+<div id="dialog-savybes" title="Pasirinkto modelio savybes">
+	<div id="savybiu-sarasas"></div>
+</div>
+
+<div id="dialog-modeliai" title="Pasirinktu metu modeliai">
+	<div id="modeliu-sarasas"></div>
+</div>
+
+<p><label for="itraukti"></label><input class="itraukti ui-button ui-widget ui-corner-all" type="button" value="itraukti nauja" id="itraukti" title="itraukti"></p>
+
+<div id="dialog-form" title="Itraukti nauja">
+	<form id="forma">
+		<fieldset>
+	
+			<label for="tipasn" ></label>
+				<select name="tipasn" id="tipasn">
+					<option value="nepasirinkta" selected>Pasirinkite tipą:</option>
+					<option value="lengvieji">Lengvasis</option>
+					<option value="krovininiai">Krovininis</option>
+					<option value="specialus">Specialusis</option>
+					<option value="mikroautobusai">Mikroautobusas</option>
+				</select>
+									
+			<label for="gamintojas">Gamintojas</label>
+			<input type="text" name="gamintojas" id="gamintojas" value="" class="text">
+			
+			<label for="modelis">Modelis</label>
+			<input type="text" name="modelis" id="modelis_i" value="" class="text">
+			
+			<label for="metai">Metai</label>
+			<input type="text" name="metai" id="metai" value="" class="text">
+			
+			<label for="savybe"><span id="parinkta_savybe"></span></label>
+			<input type="text" name="savybe" id="savybe" value="" class="text" style="display:none">
+			
+			<label for="nuotrauka">Nuotrauka</label>
+			<input type="file" id="nuotrauka">
+	  				  	                 
+			<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+		</fieldset>
+	</form>
+</div>
+
+</body>
+</html>
